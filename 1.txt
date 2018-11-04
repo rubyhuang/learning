@@ -1,0 +1,405 @@
+this的作用域
+this表示对象，全局作用域中指向window，函数中指向对象的直接调用者。
+alert(this === window); // true
+
+var fruit = "apple";
+function foo() {
+  alert(this.fruit);
+}
+var pack = {
+  fruit: "orange",
+  foo: foo
+}; // orange
+函数中的this指向是在运行时决定的，不是在定义时决定的。
+this的作用域可以被改变，方法是apply,call。
+foo.apply(window)  // apple
+
+
+
+js prototype
+1) 是实现面向对象编程的一种机制
+每个函数都有一个默认的prototype属性，该prototype属性也是一个对象，
+该prototype放的是公共的属性和方法。
+new一个对象后，prototype后面的属性和对象会成为实例化后的属性和对象。
+
+// 构造函数
+function Person(name) {
+  this.name = name;
+}
+// 定义Person的原型，原型中的属性可以被自定义对象引用
+Person.prototype.getName = function() {
+	return this.name;
+}
+var hao= new Person("haorooms");
+alert(hao.getName());  // "haorooms"
+alert(hao.constructor === Person); // true
+alert(Person.prototype.constructor === Person); // true
+这种方法constructor指向默认原型对象Person
+
+// 字面量方法
+Person.prototype = {
+	getName: function() {
+		return this.name;
+	}
+}
+var hao= new Person("haorooms");
+alert(hao.getName());  // "haorooms"
+alert(hao.constructor === Person); // false
+alert(Person.prototype.constructor === Person); // false
+alert(Person.prototype.constructor === Object); // true
+这种方法constructor重写了Person的默认原型对象
+
+// 换个位置
+var hao= new Person("haorooms");
+Person.prototype = {
+	getName: function() {
+		return this.name;
+	}
+}
+alert(hao.getName());  // TypeError: hao.getName is not a function
+alert(hao.constructor === Person); // false
+alert(Person.prototype.constructor === Person); // false
+alert(Person.prototype.constructor === Object); // true
+为什么报错
+原型对象被重写，实例化在重写之前，所以实例的隐式
+原型__proto__不会指向重写的原型对象，所以就调用不到。
+	
+
+// 数组 
+var str = [1, 2];
+str.push(3)
+Array.prototype.push.apply(str, [3])
+扩展数组方法 
+Array.prototype.selfName = function() {
+}
+str.selfName(3);
+
+
+2) 实现继承
+对象的实例赋给子对象的prototype作为引用
+function ClassA()
+{
+    this.a='a';
+}
+function ClassB()
+{
+    this.b='b';
+}
+ClassB.prototype=new ClassA(); //子类继承父类，同时new了个实例
+var objB=new ClassB();
+for(var p in objB) {
+	alert(p); // b,a
+}
+alert(objB.a);  // a
+ClassB.prototype.a='changed!!';
+alert(objB.a);  // changed!!，可以看出是引用
+
+
+
+// 如果下面，同样实现了继承，但访问不了原型的构造成员，
+只能通过原型属性或方法访问。
+ClassB.prototype=ClassA.prototype; 
+var objB=new ClassB();
+alert(objB.a);  // undefined
+只有先
+ClassA.prototype.a = '22';
+alert(objB.a);  // 22
+
+如果原型对象的成员是对象型如
+function ClassA()
+{
+    this.a= [];
+}
+
+var objB=new ClassB();
+var objB2=new ClassB();
+	objB.a.push('222')
+		alert(objB.a);  // 222
+		alert(objB2.a); // 222
+ClassB.prototype.a='changed!!';  
+alert(objB.a);     // changed!!
+		alert(objB2.a);  // changed!!
+换句话说，只有原型的成员是值类型数据或string是，
+才能有子类对象的属性和prototype原型中的属性独立。
+		
+		
+子类对象的属性和方法互不影响，会影响的只是prototype原型
+原型链：访问某个属性或方法时，先在自己的属性或方法中找，找不到，再到原型链中找，
+再到原型链的原型链中找一直往上。
+
+function ClassA()
+{
+    this.a=function(){alert();};
+}
+function ClassB()
+{
+    this.b=function(){alert();};
+}
+ClassB.prototype=new ClassA();
+var objB1=new ClassB();
+var objB2=new ClassB();
+alert(objB1.a==objB2.a);  true
+alert(objB1.b==objB2.b);   true
+子对象执行同一个原型的引用，所以子类对象中的原型成员实际是同一个
+
+function ClassA()
+{
+    alert("a");
+    this.a=function(){alert();};
+}
+function ClassB()
+{
+    alert("b");
+    this.b=function(){alert();};
+}
+ClassB.prototype=new ClassA();
+var objB1=new ClassB();
+var objB2=new ClassB();
+// a
+// b
+// b
+子类继承时，原型的构造函数不会被执行
+
+
+
+
+
+angularjs常用语法
+1.常用的指令
+ng-app
+定义应用程序的根元素。
+ng-bind
+绑定 HTML 元素到应用程序数据
+ng-bind-html
+绑定 HTML 元素的 innerHTML 到应用程序数据，并移除 HTML 字符串中危险字符
+<p ng-bind-html="myText"></p>
+$scope.myText = "My name is: <h1>John Doe</h1>";
+ng-bind-template
+规定要使用模板替换的文本内容
+<div ng-app="myApp" ng-bind-template="{{firstName}} {{lastName}}" ng-controller="myCtrl"></div>
+ng-change
+规定在内容改变时要执行的表达式
+ng-checked
+规定元素是否被选中
+<input type="checkbox" ng-model="all"> Check all<br><br>
+<input type="checkbox" ng-checked="all">Volvo<br>
+<input type="checkbox" ng-checked="all">Ford<br>
+<input type="checkbox" ng-checked="true">Mercedes
+ng-class
+指定 HTML 元素使用的 CSS 类
+<select ng-model="home">
+<option value="sky">天空色</option>
+<option value="tomato">番茄色</option>
+</select>
+
+<div ng-class="home">
+  <h1>Welcome Home!</h1>
+  <p>I like it!</p>
+</div>
+ng-class-even
+类似 ng-class，但只在偶数行起作用
+ng-class-odd
+类似 ng-class，但只在奇数行起作用
+ng-click
+定义元素被点击时的行为
+ng-disabled
+规定一个元素是否被禁用
+点击这里禁用所有表单输入域:<input type="checkbox" ng-model="all"><br>
+<br>
+
+<input type="text" ng-disabled="all">
+<input type="radio" ng-disabled="all">
+<select ng-disabled="all">
+  <option>Female</option>
+  <option>Male</option>  
+</select>
+ng-hide
+隐藏或显示 HTML 元素
+ng-href
+<div ng-init="myVar = 'http://www.runoob.com'">
+    <h1>菜鸟教程</h1>
+    <p>访问 <a ng-href="{{myVar}}">{{myVar}}</a> 学习!</p>
+</div>
+ng-if
+如果条件为 false 移除 HTML 元素
+ng-include
+在应用中包含 HTML 文件
+<div ng-include="'myFile.htm'"></div>
+ng-init
+<div ng-app="" ng-init="myText='Hello World!'">
+<h1>{{myText}}</h1>
+ng-model
+绑定 HTML 控制器的值到应用数据
+<input ng-model="name">
+ $scope.name = "John Doe";
+ng-options
+在 <select> 列表中指定 <options>
+<select ng-model="selectedName" ng-options="item for item in names"></select>
+ng-readonly
+指定元素的 readonly 属性
+ng-repeat
+定义集合中每项数据的模板
+<h1 ng-repeat="x in records">{{x}}</h1>
+ng-show
+显示或隐藏 HTML 元素
+ng-src
+指定 <img> 元素的 src 属性
+<div ng-init="myVar = 'http://www.runoob.com/wp-content/uploads/2014/06/angular.jpg'">
+    <h1>Angular</h1>
+    <img ng-src="{{myVar}}">
+</div>
+ng-style
+指定元素的 style 属性
+<h1 ng-style="myObj">菜鸟教程</h1>
+$scope.myObj = {
+        "color" : "white",
+        "background-color" : "coral",
+        "font-size" : "60px",
+        "padding" : "50px"
+    }
+ng-submit
+规定 onsubmit 事件发生时执行的表达式
+<form ng-submit="myFunc()">
+    <input type="text">
+    <input type="submit">
+</form>
+ng-switch
+规定显示或隐藏子元素的条件
+<div ng-switch="myVar">
+  <div ng-switch-when="runoob">
+     <h1>菜鸟教程</h1>
+     <p>欢迎访问菜鸟教程</p>
+  </div>
+  <div ng-switch-when="google">
+     <h1>Google</h1>
+     <p>欢迎访问Google</p>
+  </div>
+  <div ng-switch-when="taobao">
+     <h1>淘宝</h1>
+     <p>欢迎访问淘宝</p>
+  </div>
+  <div ng-switch-default>
+     <h1>切换</h1>
+     <p>选择不同选项显示对应的值。</p>
+  </div>
+</div>
+ng-value
+规定 input 元素的值
+<input ng-value="myVar">
+<input type="hidden" ng-value="p.fpmc=CT.yhhbCT[p.fpDm]" />
+ng-value在使用赋值表达式生成数据模型的同时，
+还绑定变量到元素的value属性中；
+ng-model有点特殊，专用于表单元素，即只能用于表单元素，
+用于其它元素无效，它实现了数据的双向绑定，不但可以绑定变量到元素的value属性中，还可以绑定表单元素的输入值到数据模型（变量）中去。
+使用ng-value无法绑定表单元素的输入值到数据模型（变量）中。
+在input中的值，若ng-model与ng-value都存在的话，则ng-value中值会被覆盖，显示ng-model中的值 。
+ng-model的优先级更高。
+$scope.myVar = "Hello World!";
+需要使用ng-repeat来动态生成input[]的时候
+
+
+2.全局 API
+angular.lowercase()
+将字符串转换为小写
+var str = "ABCabc";
+var upperCase = angular.lowercase(str);//abcabc
+angular.uppercase()
+将字符串转换为大写
+angular.copy(source, [destination]);
+source:被copy的对象. 可以使任意类型, 包括null和undefined.
+destination:Object,array
+数组或对象深度拷贝
+var a = {"a": "a1"}
+var b = {"b": "b1"}
+
+angular.copy(b,a)
+console.log(a)  // {"b": "b1"}
+console.log(b) // {"b": "b1"}
+var a = {
+ name : 'hello'
+};
+ 
+var c = angular.copy(a);
+console.log(c);
+{name: "hello"}
+angular.extend(dst,src)
+继承
+src：源对象
+dst：被拓展的对象
+var a = {"a": "a1"}
+var b = {"b": "b1"}
+var c = {"c": "c1"}
+
+var d = angular.extend(a,b,c)
+console.log(a) //{a: "a1", b: "b1", c: "c1"}
+console.log(b) // {b: "b1"}
+console.log(c)	//{c: "c1"}
+console.log(d) //{a: "a1", b: "b1", c: "c1"}	
+angular.forEach()
+对象或数组的迭代函数
+var objs =[{a:1},{a:2}];  
+angular.forEach(objs, function(item,index,array){  
+    // item等价于array[index]; 
+});
+angular.equals()
+如果两个对象相等返回 true
+var h = angular.equals(a, b);
+所有对象的类型，以及属性值都相同的，会返回真
+NaN和NaN也会返回真
+angular.bind(self,fn,args );
+更改this指向
+var obj1 = {
+ name : 'obj1',
+ show : function(str){
+  return this.name + str;
+ }
+};
+var obj2 = {
+ name : 'obj2'
+};
+ 
+var a = angular.bind(obj2,obj1.show,' is a object');
+var b = angular.bind(obj2,obj1.show,[' is a object']);
+console.log(a());
+obj2 is a object
+var self = { name: 'boyi' };
+var f = angular.bind(self, //绑定对象，作为函数的上下文        
+function (age) { //被绑定的函数
+alert(this.name + ' is ' + age + ' !');
+},        
+'15' //绑定的参数，可省略
+);
+f();//调用绑定之后的function
+boyi is 15 age!        
+var m = angular.bind(self,         
+function (age) {
+alert(this.name + ' is ' + age + ' !');
+}        
+);
+m(3);//调用传参的函数
+boyi is 3 age!
+angular.isObject()
+如果引用的是对象返回 true
+angular.isNumber()
+如果引用的是数字返回 true
+angular.isDefined()
+如果引用的已定义返回 true
+
+3.JSON转换
+angular.fromJson()
+反序列化 JSON 字符串
+var str = '{"name" : "xiecg","age" : "18"}';
+var json = angular.fromJson(str);
+console.log(json);
+angular.toJson()
+序列化 JSON 字符串
+var str = {"name" : "xiecg","age" : "18"};
+var json = angular.toJson(str,true);
+console.log(json);
+
+angular.element()
+包裹着一部分DOM element或者是HTML字符串，把它作为一个jQuery元素来处理。
+
+
+
+
