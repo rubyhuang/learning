@@ -1,0 +1,333 @@
+AngularJS 应用组成如下：
+View(视图), 即 HTML。
+Model(模型), 当前视图中可用的数据。
+Controller(控制器), 即 JavaScript 函数，可以添加或修改属性。
+
+
+controller
+controller的由来
+<div ng-app="myApp" ng-init="name='hell'">
+	<span ng-bind="name"></span>
+</div>
+var app = angular.module('myApp', []);
+在view中给模型的一个参数name赋值 “hello world” 简单的赋值，
+我们可以在视图中通过 ng 指令(以ng-开头的指令)实现了简单的赋值，
+如果遇到复杂的逻辑运算操作，那么视图里是无法执行复杂操作的，
+这时controller就派上用场了。
+什么是controller
+controller是JavaScript对象，由标准的JavaScript对象的构造函数创建。
+controller是实现视图和模型之间数据传递，方法调用，改变模型等一系列操作
+用于增强angular的scope
+在页面上创建一个controller时，angularjs会生成并传递一
+个新的$scope给这个controller。
+在这个控制器里初始化$scope，由于angularjs会负责处理控制器的实例化过程。
+
+
+$scope
+scope是模型，相当于MVVM中的ViewModel。
+能绑定数据（属性）和行为（方法）（它与数据模型相关），
+能监控表达式和传递事件，
+是实现双向绑定的基础（同时也是表达式执行的上下文），
+是应用在 HTML (视图) 和 JavaScript (控制器)之间的纽带，
+是连接视图和控制器的一个特殊的JavaScript对象。
+
+scope 是一个 JavaScript 对象，带有属性和方法，
+这些属性和方法可以在视图和控制器中使用。
+如果修改了视图，模型和控制器也会相应更新
+,同样的$scope 发生改变时也会立刻重新渲染视图
+<div ng-app="myApp" ng-controller="myCtrl">
+    <input ng-model="name">
+    <h1>{{greeting}}</h1>
+    <button ng-click='sayHello()'>点我</button>    
+</div>
+ 
+<script>
+var app = angular.module('myApp', []);
+app.controller('myCtrl', function($scope) {
+    $scope.name = "Runoob";
+    $scope.sayHello = function() {
+        $scope.greeting = 'Hello ' + $scope.name + '!';
+    };
+});
+</script>
+
+
+作用域是一个树型层次结构，与DOM标签平行，有根作用域，
+多个子作用域，子作用域下又有子作用域。所有的应用都有
+一个 $rootScope，它作用在 ng-app 指令包含的所
+有 HTML 元素中。$rootScope 可作用于整个应用中。
+是各个 controller 中 scope 的桥梁。用 rootscope 定义的值，
+可以在各个 controller 中使用。ng-app 指令可以产生一个根作用域之外，
+一些 指令会创建新的子作用域，并且进行原型继承，
+如 ng-repeat、ng-include、ng-switch、ng-view、ng-controller, 
+另外，用 scope: true 和 transclude: true 创建自定义 
+directive也会产生新作用域。
+
+作用域变量性质，有局部变量和全部变量之分，全局变量可以在方法，
+或者闭包内引入，而局部变量只能在定义的方法内使用，
+其他方法引用不到，$rootscope相当于全部变量，不应在 $rootScope
+附加太多的业务逻辑数据（全局），而是用控制器显示的创建 
+$scope对象来管理自己相关的逻辑和数据（局部）。
+
+作用域继承性，子作用域自动继承父作用域的属性和方法，
+如果自己有就用自己的同名属性和方法。有如下内部关系
+scope.$parent ：指向scope的父作用域
+scope.$$childHead：指向scope的第一个子作用域
+scope.$$childTail：指向scope的最后一个子作用域
+scope.$$nextSibling：指向scope的下一个相邻作用域
+scope.$$prevSibling：指向scope的上一个相邻作用域
+
+<!--绑定ng-app产生$rootscope，还有产生一个当前作
+用域$scope(shapeController),这里产生两个作用域-->
+   <!--message和type都显示自己的-->
+  <div ng-app="mainApp" ng-controller="shapeController">
+   <p>{{message}} <br/> {{type}} </p>
+　　<!--产生一个子作用域（circleController）-->
+　　<!--message显示自己的，type没定义，就显示继承过来的type-->
+   <div ng-controller="circleController">
+     <p>{{message}} <br/> {{type}} </p>
+   </div>
+　　<！--产生另一个平行子作用域(squareController)-->
+　　<!--message和type都显示自己的，虽然和根作用域有继承关系-->
+   <div ng-controller="squareController">
+     <p>{{message}} <br/> {{type}} </p>
+   </div>
+  </div>
+
+ var mainApp = angular.module("mainApp", []);
+ 　//父控制器，产生父作用域
+   mainApp.controller("shapeController", function($scope) {
+     $scope.message = "In shape controller";
+     $scope.type = "Shape";
+   });
+ 　//子作用域，没type，用父作用域的type
+   mainApp.controller("circleController", function($scope) {
+     $scope.message = "In circle controller";  
+   });
+ 　//另一个平行子作用域,有type用自己的type
+   mainApp.controller("squareController", function($scope) {
+     $scope.message = "In square controller";
+     $scope.type = "Square";
+   });
+   
+
+
+$scope(作用域)特点
+1.方法$watch()、$apply()
+$watch()用于监听模型变化,当模型发生变化，它会提示你的。
+<div ng-app="myApp" ng-controller="AppCtrl" ng-init="name='hell'">
+	<input ng-model="name"></span>
+</div>
+
+<script>
+var app = angular.module('myApp', []);
+
+app.controller('AppCtrl',function($scope){
+     $scope.name = 'hello';
+
+var watch = $scope.$watch('name',function(newValue,oldValue, scope){
+
+        alert(newValue);
+
+        alert(oldValue);
+
+});
+});
+</script>
+$apply()用于传播模型的变化。AngularJS 外部的控制器
+（DOM 事件、外部的回调函数如 jQuery UI 空间等）
+调用了AngularJS 函数之后，必须调用$apply。
+$scope.test = function() {  
+    setTimeout(function () {  
+        $scope.$apply(function () {  
+            $scope.user = "hello";  
+        });  
+    }, 2000);  
+}
+
+2. $scope可以为一个对象传播事件，类似DOM事件。
+ $scope.submit = function(){
+	alert("提交成功！");
+}
+3. $scope不仅是MVC的基础，也是实现双向数据绑定的基础
+作用域提供表达式执行上下文，比如说表达式{{username}}
+本身是无意义的。要与作用域$scope指定的username属性中才有意义。
+4.$scope是一个树型结构，与DOM标签平行。
+5.子$scope对象会继承父$scope上的属性和方法。
+
+$scope(作用域)的作用
+提供了观察者可以监听数据模型的变化
+可以将数据模型的变化通知给整个 App
+可以进行嵌套,隔离业务功能和数据
+给表达式提供上下文执行环境
+
+
+$scope(作用域)的生命周期
+1. 创建 - 更作用域会在应用启动时通过注入器创建并注入。
+在模板连接阶段，一些指令会创建自己的作用域。
+2. 注册观察者 - 在模板连接阶段，将会注册作用域的监听器。
+这也监听器被用来识别模型状态改变并更新视图。
+3. 模型状态改变 - 更新模型状态必须发生在scope.$apply方法
+中才会被观察到。Angular框架封装了$apply过程，无需我们操心。
+4. 观察模型状态 - 在$apply结束阶段，angular会从根作用域
+执行$digest过程并扩散到子作用域。在这个过程中被观察的表达
+式或方法会检查模型状态是否变更及执行更新。
+5. 销毁作用域 -当不再需要子作用域时，通过scope.$destroy()
+销毁作用域，回收资源。
+
+
+2) 写法
+在定义controller的时候，先声明方法需要注入的参数，
+然后再定义方法体。最后将AppController绑定到app上。
+var app = angular.module('myApp', []);
+app.controller('AppCtrl',function($scope){
+     $scope.name = 'test22'
+});
+在controller执行之前，Angular Injector会生成一个$scope的实例和其他注入服务
+的实例，并传入该方法。 在对JS打包压缩处理后，参数名就可能发生变化，
+Angular Injector将不能够正确地注入依赖的Service。
+
+var AppCtrl = ['$scope', function($scope){
+     $scope.name = 'test'
+}];
+app.controller('AppCtrl',AppCtrl);
+
+angular.module('myApp', [])
+.controller( 'AppCtrl' , function($scope){
+})
+
+
+3) 通信
+angular控制器通信的方式有三种：
+1. 利用作用域继承的方式。即子控制器继承父控制器中的内容
+由于作用域的继承是基于js的原型继承方式，所以这里分为两种情况，
+当作用域上面的值为基本类型的时候，修改父作用域上面的值会影响到子
+作用域，反之，修改子作用域只会影响子作用域的值，不会影响父作用域
+上面的值；如果需要父作用域与子作用域共享一个值的话，就需要用到后面
+一种，即作用域上的值为对象，任何一方的修改都能影响另一方，
+这是因为在js中对象都是引用类型。
+
+基本类型
+
+function Sandcrawler($scope)?{
+
+$scope.location = "Mos Eisley North";
+
+$scope.move= function(newLocation) {
+
+$scope.location = newLocation;
+
+}
+
+};
+
+function Droid($scope) {
+
+$scope.sell = function(newLocation) {
+
+$scope.location = newLocation;
+
+}
+
+}
+
+// html
+
+<div?ng-controller="Sandcrawler">
+
+<p>Location: </p>
+
+<button ng-click="move('Mos Eisley South')">Move</button>
+
+<div ng-controller="Droid">
+
+ <p>Location:?</p>
+
+ <button?ng-click="sell('Owen Farm')">Sell</button>
+
+</div>
+
+
+2. 基于事件的方式。即$on,$emit,$boardcast这三种方式
+在一般情况下基于继承的方式已经足够满足大部分情况了，但是
+这种方式没有实现兄弟控制器之间的通信方式，所以引出了事件的方式。
+基于事件的方式中我们可以利用$on,$emit,$boardcast这几个方式来实现，
+其中$on表示事件监听，$emit表示向父级以上的作用域触发事件，
+ $boardcast表示向子级以下的作用域广播事件。
+
+3. 服务方式。写一个服务的单例然后通过注入来使用
+在ng中服务是一个单例，所以在服务中生成一个对象，该对象就可以利
+用依赖注入的方式在所有的控制器中共享。
+
+var app = angular.module('myApp', []);
+
+//使用factory API创建服务instance
+
+app.factory('instance', function(){
+
+return {};
+
+});
+
+app.controller('MainCtrl', function($scope, instance) {
+
+$scope.change = function() {
+
+instance.name = $scope.test;
+
+};
+
+});
+
+app.controller('sideCtrl', function($scope, instance) {
+
+$scope.add = function() {
+
+$scope.name = instance.name;
+
+};
+
+});
+
+//html
+
+<div ng-controller="MainCtrl">
+
+<input type="text" ng-model="test" />
+
+<div ng-click="change()">click me</div>
+
+
+
+
+controller继承
+controller嵌套
+多个controller作用域
+
+
+
+
+
+controller注意事项：
+使用controller的情况
+$scope中对象的初始化
+给$scope中对象增加一些行为
+
+不使用controller的情况
+操作dom，用directive
+格式化，用filter
+共享代码或状态，用服务注入
+
+父controller具备并且提供基础服务的能力，写业务代码
+子controller剥离业务逻辑，只负责交互行为
+
+1. 一个controler最好只包含一个视图的业务逻辑。
+所以一个widget会包含很多个controller。
+
+2. controller之间不存在相互调用，共用的工具方法
+和不属于controller的业务单独抽出来做成一个服务,
+然后在controller中注入服务来调用。
+
+3.controller不应该操作DOM，请用directive。
+
+4.controller不应该做数据过滤，请用filter 过滤器.
