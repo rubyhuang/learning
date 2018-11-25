@@ -1,0 +1,471 @@
+angularjs service
+什么是service
+AngularJS功能最基本的组件之一是服务(Service)。
+服务为你的应用提供基于任务的功能。
+服务可以被视为重复使用的执行一个或多个相关任务的代码块。
+
+AngularJS服务是单例对象，这意味着只有一个实例被创建过，
+服务使用AngularJS的依赖注入机制来定义和注册。
+
+无论我们在什么地方注入我们的service，将永远使用同一个实例。
+
+可以把服务注入模块、控制器和其它服务。
+
+
+
+AngularJS中使用DI添加Service的三种方法 
+方式1（内联注解）
+app.controller('myController', ['$scope', 'dateFilter', function ($scope, dateFilter) { }]);
+
+方式2（$inject注解）
+var MyController = function($scope, dateFilter) {}  
+MyController.$inject = ['$scope', 'dateFilter'];  
+someModule.controller('MyController', MyController);
+
+方式3（隐式注解）
+app.controller('myController', function ($scope, dateFilter) { });    
+
+
+分内置服务和自定义服务
+常见的内置服务如下：
+$http 发送http请求
+$resource 创建一个可以RESTful服务器端数据源交互对象
+$window 浏览器的window元素的jQuery包装
+$document 浏览器的document元素的jQuery包装
+$rootScope 根作用域的访问
+$rootElement 根元素的访问
+$cacheFactory 提供键/值对放置到对象缓存
+$interval 提供对window.setInterval访问
+$timeout 提供对window.setTimeout访问
+$cookies 提供对浏览器的cookie的读写访问
+$animate 提供动画钩子来同时链接到以CSS和JavaScript为基础的动画
+
+
+
+
+自定义服务
+Factory
+Service
+Provider
+
+factory
+factory方式创建的服务，作用就是返回一个有属性有方法的对象。
+相当于：var f = myFactory();
+<div ng-app="myApp" ng-controller="myCtrl">
+    <p>{{r}}</p>
+</div>
+
+//创建模型
+    var app = angular.module('myApp', []);
+
+    //通过工厂模式创建自定义服务
+    app.factory('myFactory', function() {
+        var service = {};//定义一个Object对象'
+        service.name = "张三";
+        var age;//定义一个私有化的变量
+        //对私有属性写getter和setter方法
+        service.setAge = function(newAge){
+            age = newAge;
+        }
+        service.getAge = function(){
+            return age; 
+        }
+        return service;//返回这个Object对象
+    });
+    //创建控制器
+    app.controller('myCtrl', function($scope, myFactory) {
+        myFactory.setAge(20);
+        $scope.r =myFactory.getAge();
+        alert(myFactory.name);
+    });
+	
+	
+	
+service
+通过service方式创建自定义服务，相当于new的一个对象：
+var s = new myService();，只要把属性和方法添加到
+this上才可以在controller里调用。
+<div ng-app="myApp" ng-controller="myCtrl">
+    <h1>{{r}}</h1>
+</div>
+
+var app = angular.module('myApp', []);
+
+    app.service('myService', function($http,$q) {
+        this.name = "service";
+        this.myFunc = function (x) {
+            return x.toString(16);//转16进制
+        }
+        this.getData = function(){
+            var d = $q.defer();
+            $http.get("ursl")//读取数据的函数。
+                .success(function(response) {
+                d.resolve(response);
+            })
+                .error(function(){
+                alert(0)
+                d.reject("error");
+            });
+            return d.promise;
+        }
+    });
+    app.controller('myCtrl', function($scope, myService) {
+        $scope.r = myService.myFunc(255);
+        myService.getData().then(function(data){
+            console.log(data);//正确时走这儿
+        },function(data){
+            alert(data)//错误时走这儿
+        });
+    });
+
+provder
+只有provder是能传 .config() 函数的 service。
+如果想在 service 对象启用之前，先进行模块范围的配置，
+那就应该选择 provider。
+需要注意的是：在config函数里注入provider时，
+名字应该是：providerName+Provider. 
+使用Provider的优点就是，你可以在Provider对象传递到
+应用程序的其他部分之前在app.config函数中对其进行修改。 
+当你使用Provider创建一个service时，唯一的可以在你的
+控制器中访问的属性和方法是通过$get()函数返回内容。
+<div ng-app="myApp" ng-controller="myCtrl">
+
+ var app = angular.module('myApp', []);
+
+    //需要注意的是：在注入provider时，名字应该是：providerName+Provider   
+    app.config(function(myProviderProvider){
+        myProviderProvider.setName("大圣");       
+    });
+    app.provider('myProvider', function() {
+        var name="";
+        var test={"a":1,"b":2};
+        //注意的是，setter方法必须是(set+变量首字母大写)格式
+        this.setName = function(newName){
+            name = newName  
+        }
+
+        this.$get =function($http,$q){
+            return {
+                getData : function(){
+                    var d = $q.defer();
+                    $http.get("url")//读取数据的函数。
+                        .success(function(response) {
+                            d.resolve(response);
+                        })
+                        .error(function(){
+                            d.reject("error");
+                        });
+                    return d.promise;
+                },
+                "lastName":name,
+                "test":test
+            }   
+        }
+
+    });
+    app.controller('myCtrl', function($scope,myProvider) {
+        alert(myProvider.lastName);
+        alert(myProvider.test.a)
+        myProvider.getData().then(function(data){
+            //alert(data)
+        },function(data){
+            //alert(data)
+        });
+    });
+
+
+
+Service、Factory、Provider三者区别
+1) 用 Factory 就是创建一个对象，为它添加属性，
+然后把这个对象返回出来。service 传进 controller 之后，
+在 controller 里这个对象里的属性就可以通过 factory 使用。
+2) Service 是用"new"关键字实例化的。给"this"添加属性，
+然后 service 返回"this"。把 service 传进 controller 之后，
+在controller里 "this" 上的属性就可以通过 service 来使用了。
+3) Providers 是唯一一种可以传进 .config() 函数的 
+service。想要在 service 对象启用之前，先进行模
+块范围的配置，那就应该用 provider。
+4）Factory/service是第一个注入时才实例化，而provider不是，
+它是在config之前就已实例化好
+
+
+
+适合什么时候使用 
+factory
+在service里面当我们仅仅需要的是一个方法和数据的集合
+且不需要处理复杂的逻辑的时候。
+
+service
+在功能控制比较多的service里面
+
+provider
+希望在应用开始前对service进行配置的时候
+	
+
+	
+	
+	
+	
+module	
+模块定义了一个应用程序。
+模块是应用程序中不同部分的容器。
+模块是应用控制器的容器。
+控制器通常属于一个模块。
+
+模块允许我们通过声明的方式来描述应用中的依赖关系，
+以及如何进行组装和启动。
+
+使用优势
+整个过程是声明式的，更容易理解
+在单元测试中，没有必要加载所有模块，这样有利于单元测试的代码书写
+在场景测试中，额外的模块可以被加载进来，进而重写一些配置，
+这样有助于实现应用的端到端的测试
+第三方代码可以很容易被打包成可重用的模块
+模块可以用任意顺序或并行顺序加载（得益于模块执行的延迟性）
+
+<html ng-app="MyAwesomeApp">
+ng-app指令就会告诉AngularJS使用MyAwesomeApp模块来启动你的应用。
+例如
+为服务、指令和过滤器分别定义不同的模块。在主模块可以声明依赖
+这些模块。
+
+这样可以使得模块管理更加容易，因为它们都是良好的、完备的代码块，
+每个模块有且只有一种职能。同时，单元测试可以只加载它们所关注的
+模块，这样就可以减少初始化的次数，单元测试也会变得更精致、更专注。
+
+
+angular模块通过angular.module(name,requires, configFn)方法生成：
+参数name是模块名称；
+参数requires表示依赖模块数组。如果不设置requires参数，
+调用angular.module(name)方法表示获取这个模块；因此，
+如果确定新模块没有依赖关系，必须设置requires为空数组[]；
+参数configFn是方法或数组，负责在模块初始化时做一些配置，
+如果是数组，最后一个元素必须是方法。
+
+
+模块加载动作发生在两个不同的阶段
+分别是Config代码块和Run代码块
+1.Config代码块
+在这一阶段里面，AngularJS会连接并注册好所有数据源。因此，
+只有数据源和常量可以注入到Config代码块中。那些不确定是否
+已经初始化好的服务不能注入进来。
+
+2.Run代码块
+Run代码块用来启动你的应用，并且在注射器创建完成之后开始执行。
+为了避免在这一点开始之后再对系统进行配置操作，只有实例和常量
+可以被注入到Run代码块中。你会发现，在AngularJS中，Run代码块是
+与main方法最类似的东西。
+
+
+
+利用模块可以做什么？
+1.config(configFn)
+利用此方法可以做一些注册工作，这些工作需要在模块加载时完成。
+
+2.constant(name, object)
+此方法会首先运行，所以你可以用它来声明整个应用范围内的常量，
+并且让它们在所有配置（config方法）和实例（后面的所有方法，
+例如controller、service等）方法中可用。
+
+3.controller(name,constructor)
+它的基本作用是配置好控制器方便后面使用。
+
+4.directive(name,directiveFactory)
+可以使用此方法在应用中创建指令。
+
+5.filter(name,filterFactory)
+允许你创建命名的AngularJS过滤器。
+
+6.run(initializationFn)
+如果你想要在注射器启动之后执行某些操作，而这些操作需要
+在页面对用户可用之前执行，就可以使用此方法。
+
+7.value(name,object)
+允许在整个应用中注射值。
+
+8.factory(name,factoryFn)
+如果你有一个类或者对象，需要首先为它提供一些逻辑或者参数，
+然后才能对它初始化，那么你就可以使用这里的factory接口。
+factory是一个函数，它负责创建一些特定的值（或者对象）。
+9.service(name,object)
+factory和service之间的不同点在于，factory会直接调用传递给它
+的函数，然后返回执行的结果；而service将会使用"new"关键字来
+调用传递给它的构造方法，然后再返回结果
+10.animation()
+		
+10.provider(name,providerFn)
+provider是这几个方法中最复杂的部分（显然，也是可配置性最好
+的部分）。provider中既绑定了factory也绑定了service，并且在
+注入系统准备完毕之前，还可以享受到配置provider函数的好处
+
+
+
+
+
+
+promise
+在JavaScript的世界中，所有代码都是单线程执行的。
+导致JavaScript的所有网络操作，浏览器事件，都必须是异步执行。
+异步执行可以用回调函数实现
+function callback() {
+    console.log('Done');
+}
+console.log('before setTimeout()');
+setTimeout(callback, 1000); // 1秒钟后调用callback函数
+console.log('after setTimeout()');
+
+AJAX的异步操作
+把回调函数success(request.responseText)和fail(request.status)
+写到一个AJAX操作里很正常，但是不好看，而且不利于代码复用。
+
+能否采用链式写法，先统一执行AJAX逻辑，不关心如何处理结果，
+然后，根据结果是成功还是失败，在将来的某个时候调用success函数
+或fail函数。
+var ajax = ajaxGet('http://...');
+ajax.ifSuccess(success)
+    .ifFail(fail);
+
+所以有Promise对象
+
+Promise是一种异步编程的解决方案,相比传统回调函数更合理.
+
+let p = new Promise((resolve, reject) => {
+    console.log('立即执行!');
+    resolve('返回成功!')
+});
+
+console.log('promise后执行!');
+
+p.then(value => {
+    console.log(value)
+});
+Promise的构造函数接收一个参数，是函数，并且传入两个参数：
+resolve，reject，分别表示异步操作执行成功后的回调函数和
+异步操作执行失败后的回调函数。
+resolve是将Promise的状态置为fullfiled，
+reject是将Promise的状态置为rejected。
+
+
+
+Promise的三种状态
+pending，resolved，rejected
+当Promise刚创建完成时,处于pending状态;当Promise中的函数参数执行
+了resolve后,Promise由pending状态变成resloved状态;如果Promise的
+函数参数中执行的是reject方法,那么Promise会有pending状态变成
+rejected状态.
+let p1 = new Promise((reslove, reject) => {
+    reslove(1);
+});
+let p2 = new Promise((reslove, reject) => {
+    setTimeout(() => {
+        reslove(2);
+    }, 500);
+});
+let p3 = new Promise((reslove, reject) => {
+    setTimeout(() => {
+        reject(3);
+    }, 500);
+});
+
+console.log(p1);
+console.log(p2);
+console.log(p3);
+setTimeout(() => {
+    console.log(p2);
+}, 1000);
+setTimeout(() => {
+    console.log(p3);
+}, 1000);
+
+p1.then(value => {
+    console.log(value);
+});
+p2.then(value => {
+    console.log(value);
+});
+p3.catch(err => {
+    console.log(err);
+});
+
+Promise {[[PromiseStatus]]: "resolved", [[PromiseValue]]: 1}
+Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
+Promise {[[PromiseStatus]]: "pending", [[PromiseValue]]: undefined}
+1
+2
+3
+Promise {[[PromiseStatus]]: "resolved", [[PromiseValue]]: 2}
+Promise {[[PromiseStatus]]: "rejected", [[PromiseValue]]: 3}
+
+
+
+Promise状态不可逆性
+let p1 = new Promise((reslove, reject) => {
+    reslove('成功1!');
+    reslove('成功2!');
+});
+let p2 = new Promise((reslove, reject) => {
+    reslove('成功!');
+    reject('失败!');
+});
+
+p1.then(value => {
+    console.log(value);
+});
+p2.then(value => {
+    console.log(value);
+});
+"成功1!"
+"成功!"
+Promise的状态一旦变成resolved或rejected时,Promise的状态
+和值就固定下来了,无论后续再怎么调用reslove或是reject方法,
+都不能改变它的状态和值.
+
+
+catch的用法
+1.和then的第二个参数一样，用来指定reject的回调
+2.在执行resolve的回调时，如果抛出异常了（代码出错了），
+那么并不会报错卡死js，而是会进到这个catch方法中,
+与try/catch语句有相同的功能。
+getNumber()
+.then(function(data){
+    console.log('resolved');
+    console.log(data);
+})
+.catch(function(reason){
+    console.log('rejected');
+    console.log(reason);
+});
+
+
+all的用法
+Promise
+.all([runAsync1(), runAsync2(), runAsync3()])
+.then(function(results){
+    console.log(results);
+});
+race的用法
+Promise
+.race([runAsync1(), runAsync2(), runAsync3()])
+.then(function(results){
+    console.log(results);
+});
+
+promise好处
+1.在异步执行的流程中，把执行代码和处理结果的代码清晰地分离了
+2.可串行执行若干异步任务外，也可并行执行异步任务
+
+
+串行
+job1.then(job2).then(job3).catch(handleError);
+
+并行
+var p1 = new Promise(function (resolve, reject) {
+    setTimeout(resolve, 500, 'P1');
+});
+var p2 = new Promise(function (resolve, reject) {
+    setTimeout(resolve, 600, 'P2');
+});
+// 同时执行p1和p2，并在它们都完成后执行then:
+Promise.all([p1, p2]).then(function (results) {
+    console.log(results); // 获得一个Array: ['P1', 'P2']
+});
